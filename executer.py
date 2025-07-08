@@ -10,6 +10,10 @@ def ensure_dir_exists(directory):
         os.makedirs(directory)
         print(f"Directorio creado: {directory}")
 
+def is_running_in_docker():
+    """Detecta si el código está ejecutándose dentro de Docker."""
+    return os.path.exists('/.dockerenv')
+
 def compile_go_code(go_code, output_dir="resultado", output_name="result.s"):
     """
     Compila el código Go proporcionado y guarda el resultado como archivo .s
@@ -33,7 +37,7 @@ def compile_go_code(go_code, output_dir="resultado", output_name="result.s"):
     
     try:
         # Compilar el código Go en modo ensamblador-only
-        if os.name == 'nt':  # Windows
+        if os.name == 'nt' and not is_running_in_docker():  # Windows (no Docker)
             exec_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend", "main.exe")
             if not os.path.exists(exec_path):
                 # Intentar compilar el compilador si no existe
@@ -46,7 +50,7 @@ def compile_go_code(go_code, output_dir="resultado", output_name="result.s"):
             result = subprocess.run([exec_path, temp_file_path, "-s"], 
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
                                    text=True)
-        else:  # Linux/Mac
+        else:  # Linux/Mac o Docker
             exec_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend", "main")
             if not os.path.exists(exec_path):
                 # Intentar compilar el compilador si no existe
@@ -94,7 +98,7 @@ def compile_assembly_to_executable(assembly_file, executable_name="programa"):
         output_dir = os.path.dirname(assembly_file)
         executable_path = os.path.join(output_dir, executable_name)
         
-        if os.name == 'nt':  # Windows
+        if os.name == 'nt' and not is_running_in_docker():  # Windows (no Docker)
             executable_path += '.exe'
         
         # Compilar el ensamblador a un ejecutable usando GCC
